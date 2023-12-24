@@ -20,30 +20,20 @@ class Node:
             except AttributeError:
                 self.right = Node(data)
 
-    def printTree(self):
+    def printTreeData(self):
         if self.left:
-            self.left.printTree()
+            self.left.printTreeData()
         print(self.data)
         if self.right:
-            self.right.printTree()
+            self.right.printTreeData()
 
-    def printTree2(self, arr:np.array):
-        # print(string_value)
-        if self.left:
-            arr = np.append(arr, "l"+str(self.data)+"\n")
-            arr = self.left.printTree2(arr)
-        if self.right:
-            arr = np.append(arr, "r"+str(self.data) + "\n")
-            arr = self.right.printTree2(arr)
-        return arr
-
-    def printTree3(self, string=''):
+    def printTree(self, string=''):
         if self.left:
             string += str(self.data)+' <- '
-            string = self.left.printTree3(string)
+            string = self.left.printTree(string)
         if self.right:
             string += str(self.data)+' -> '
-            string = self.right.printTree3(string)
+            string = self.right.printTree(string)
         return string+'↑ '
 
     def inorder_traversal(self, residual):
@@ -60,5 +50,5 @@ for i in range(36, 50):
     main_node.insert(i)
 
 # a = main_node.printTree2(np.array([], dtype=str))
-a = main_node.printTree3()
+a = main_node.printTree()
 order = main_node.inorder_traversal([])
