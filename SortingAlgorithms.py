@@ -80,36 +80,34 @@ def merge_sort(arr):  # not in-place
     return merge(left, right)
 
 
-# def merge_sort2(arr):  # not in-place
-#
-#     def merge(left, right):
-#         l, r, result = 0, 0, []
-#         while l < len(left) or r < len(right):
-#             if left[l] <= right[r]:
-#                 result.append(left[l])
-#                 l += 1
-#                 try:
-#                     left[l]
-#                 except IndexError:
-#                     result = result + right[r:]
-#                     r = len(right)
-#             elif left[l] > right[r]:
-#                 result.append(right[r])
-#                 r += 1
-#                 try:
-#                     right[r]
-#                 except IndexError:
-#                     result = result + left[l:]
-#                     l = len(left)
-#         return result
-#
-#     if len(arr) < 2:
-#         return arr[:]
-#     middle = len(arr) // 2
-#     left = merge_sort2(arr[:middle])
-#     right = merge_sort2(arr[middle:])
-#     print()
-#     return merge(left, right)
+# O(n) = nlog_2(n)
+def merge_sort2(arr):  # not in-place
 
+    def merge(left, right):
+        l, r, result = 0, 0, []
+        while l < len(left) or r < len(right):
+            if left[l] <= right[r]:
+                result.append(left[l])
+                l += 1
+                try:
+                    left[l]
+                except IndexError:
+                    result = result + right[r:]
+                    r = len(right)
+            elif left[l] > right[r]:
+                result.append(right[r])
+                r += 1
+                try:
+                    right[r]
+                except IndexError:
+                    result = result + left[l:]
+                    l = len(left)
+        return result
 
-array = [5, 1, 10, -5, 15, 7, -100, -500]
+    if len(arr) < 2:
+        return arr[:]
+    middle = len(arr) // 2
+    left = merge_sort2(arr[:middle])
+    right = merge_sort2(arr[middle:])
+    print()
+    return merge(left, right)
