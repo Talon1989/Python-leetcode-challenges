@@ -52,3 +52,15 @@ for i in range(36, 50):
 # a = main_node.printTree2(np.array([], dtype=str))
 a = main_node.printTree()
 order = main_node.inorder_traversal([])
+
+
+def invert_tree(root:Node):
+    stack = [root]
+    while stack:
+        node = stack.pop()
+        node.left, node.right = node.right, node.left
+        if node.left:
+            stack.append(node.left)
+        if node.right:
+            stack.append(node.right)
+

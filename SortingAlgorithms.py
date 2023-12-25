@@ -21,9 +21,7 @@ def bubble_sort(arr):
         flag = True
         for idx in range(1, len(arr)):
             if arr[idx-1] > arr[idx]:
-                temp = arr[idx]
-                arr[idx] = arr[idx-1]
-                arr[idx-1] = temp
+                arr[idx], arr[idx-1] = arr[idx-1], arr[idx]
                 flag = False
         if flag:
             return
@@ -37,9 +35,7 @@ def selection_sort(arr):
         for j in range(idx, len(arr)):
             if arr[j] < arr[min_idx]:
                 min_idx = j
-        temp = arr[min_idx]
-        arr[min_idx] = arr[idx]
-        arr[idx] = temp
+        arr[idx], arr[min_idx] = arr[min_idx], arr[idx]
         current_idx += 1
 
 
@@ -111,3 +107,6 @@ def merge_sort2(arr):  # not in-place
     right = merge_sort2(arr[middle:])
     print()
     return merge(left, right)
+
+
+arr = np.random.normal(0, 10, 12)
