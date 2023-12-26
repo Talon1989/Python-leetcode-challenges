@@ -93,9 +93,11 @@ class CustomNeuralNetworkRegressor:
     def __init__(self, input_size: int, hidden_size: int, batch_size=32, alpha=1/1_000):
         self.input_size = input_size
         self.b_1 = np.zeros(hidden_size)
-        self.w_1 = np.random.normal(0, 1, [input_size, hidden_size])
+        # self.w_1 = np.random.normal(0, 1, [input_size, hidden_size])
+        self.w_1 = np.zeros([input_size, hidden_size]) + 1e-4
         self.b_2 = np.zeros(1)
-        self.w_2 = np.random.normal(0, 1, [hidden_size, 1])
+        # self.w_2 = np.random.normal(0, 1, [hidden_size, 1])
+        self.w_2 = np.zeros([hidden_size, 1]) + 1e-4
         self.batch_size = batch_size
         self.alpha = alpha
         self.hidden_layer_derivatives = None  # hidden layers derivatives at point x
@@ -109,7 +111,8 @@ class CustomNeuralNetworkRegressor:
         z_1 = self.b_1 + np.dot(x, self.w_1)
         a_1 = self._activation(z_1)
         a = a_1.copy()
-        self.hidden_layer_derivatives = a[a > 0] = 1
+        # self.hidden_layer_derivatives = a[a > 0] = 1
+        self.hidden_layer_derivatives = np.where(a > 0, 1, 0)
         z_2 = self.b_2 + np.dot(a_1, self.w_2)
         a_2 = self._activation(z_2)
         return z_1, a_1, z_2, a_2
@@ -119,12 +122,6 @@ class CustomNeuralNetworkRegressor:
         a_1 = self._activation(z_1)
         z_2 = self.b_2 + np.dot(a_1, self.w_2)
         return z_2
-
-    # def _derivative(self, x):
-    #     """
-    #     :return: derivative of activation function with respect of weights at x point
-    #     """
-    #     return self._activation(x) * (1 - self._activation(x))
 
     def fit(self, x, y, epochs=500, l2=0):
         """
@@ -142,8 +139,8 @@ class CustomNeuralNetworkRegressor:
                 out_error = y_batch - z_2
                 mse = 1/x_batch.shape[0] * np.sum(out_error ** 2)
                 out_delta = np.dot(a_1.T, -out_error)
-                print(out_delta.shape)
-                print(self.w_2.shape)
+                # print(out_delta)
+                print(self.w_2)
                 self.b_2 = self.b_2 - self.alpha * np.sum(-out_error, axis=0)
                 self.w_2 = self.w_2 - self.alpha * out_delta
                 h_delta = np.dot(out_error, self.w_2.T) * self.hidden_layer_derivatives
