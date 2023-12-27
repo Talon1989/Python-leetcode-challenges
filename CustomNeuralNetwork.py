@@ -73,9 +73,8 @@ class CustomNeuralNetworkClassifier:
                 a_1, preds = self._calculate(x_batch)
                 out_error = y_batch - preds
                 mse = 1/x_batch.shape[0] * np.sum(out_error ** 2)
-                out_delta = np.dot(a_1.T, -out_error * self.output_derivatives)   # h x batch . batch x o = h x o
                 self.b_2 = self.b_2 - self.alpha * np.sum(-out_error, axis=0)
-                self.w_2 = self.w_2 - self.alpha * out_delta + l2 * self.w_2
+                self.w_2 = self.w_2 - self.alpha * np.dot(a_1.T, -out_error * self.output_derivatives) + l2 * self.w_2
                 h_delta = np.dot(out_error, self.w_2.T)  # batch x o . o x h = batch x h
                 self.b_1 = self.b_1 - self.alpha * np.sum(-h_delta, axis=0)
                 self.w_1 = self.w_1 - self.alpha * np.dot(x_batch.T, -h_delta * self.hidden_derivatives) + l2 * self.w_1
@@ -87,15 +86,13 @@ class CustomNeuralNetworkClassifier:
 class CustomNeuralNetworkRegressor:
     """
     Custom (1 hidden layer) neural network regressor
-    using sigmoid function as activation and mse as error with gradient descent
+    using mse as error with gradient descent
     """
     def __init__(self, input_size: int, hidden_size: int, batch_size=32, alpha=1/1_000):
         self.input_size = input_size
-        self.b_1 = np.zeros(hidden_size)
-        # self.w_1 = np.random.normal(0, 1, [input_size, hidden_size])
+        self.b_1 = np.zeros(hidden_size) + 1e-4
         self.w_1 = np.zeros([input_size, hidden_size]) + 1e-4
-        self.b_2 = np.zeros(1)
-        # self.w_2 = np.random.normal(0, 1, [hidden_size, 1])
+        self.b_2 = np.zeros(1) + 1e-4
         self.w_2 = np.zeros([hidden_size, 1]) + 1e-4
         self.batch_size = batch_size
         self.alpha = alpha
@@ -135,9 +132,80 @@ class CustomNeuralNetworkRegressor:
                 z_1, a_1, z_2, a_2 = self._calculate(x_batch)
                 out_error = y_batch - z_2
                 mse = 1/x_batch.shape[0] * np.sum(out_error ** 2)
-                out_delta = np.dot(a_1.T, -out_error)
                 self.b_2 = self.b_2 - self.alpha * np.sum(-out_error, axis=0)
-                self.w_2 = self.w_2 - self.alpha * out_delta + l2 * self.w_2
+                self.w_2 = self.w_2 - self.alpha * np.dot(a_1.T, -out_error * 1) + l2 * self.w_2
+                h_delta = np.dot(out_error, self.w_2.T)
+                self.b_1 = self.b_1 - self.alpha * np.sum(-h_delta, axis=0)
+                self.w_1 = self.w_1 - self.alpha * np.dot(x_batch.T, -h_delta * self.hidden_layer_derivatives) + l2 * self.w_1
+            print(f'Epoch: {e} | loss: {mse:.3f}')
+        return self
+
+
+class CustomNeuralNetworkRegressorFull:
+    """
+    Custom neural network regressor
+    using mse as error with gradient descent
+    """
+    def __init__(self, input_size: int, hidden_s, batch_size=32, alpha=1/1_000):
+        self.input_size = input_size
+        self.hidden_s = hidden_s
+        self.batch_size = batch_size
+        self.alpha = alpha
+        self.bs, self.ws = [], []
+        self.out_b, self.out_w = None, None
+        self.derivatives = []
+        self._build_layers()
+
+    def _build_layers(self):
+        previous_size = self.input_size
+        for h in self.hidden_s:
+            self.bs.append(np.zeros(h) + 1e-4)
+            self.ws.append(np.zeros([previous_size, h]) + 1e-4)
+            previous_size = h
+        self.out_b = np.zeros(1) + 1e-4
+        self.out_w = np.zeros([self.hidden_s[-1], 1]) + 1e-4
+
+    def _activation(self, x):
+        return x.clip(min=0)
+
+    def _calculate(self, x):
+        self.derivatives.clear()
+        a = x
+        z_s, a_s = [], []
+        for i in range(len(self.hidden_s)):
+            z = self.bs[i] + np.dot(a, self.ws[i])
+            a = self._activation(z)
+            self.derivatives.append(np.where(a > 0, 1, 0))
+            z_s.append(z)
+            a_s.append(a)
+        z_out = self.out_b + np.dot(a, self.out_w)  # no need for output derivatives since it's linear output
+        return z_s, a_s, z_out
+
+    def predict(self, x):
+        a = x
+        for i in range(len(self.hidden_s)):
+            z = self.bs[i] + np.dot(a, self.ws[i])
+            a = self._activation(z)
+        z_out = self.out_b + np.dot(a, self.out_w)
+        return z_out
+
+    def fit(self, x, y, epochs=500, l2=0):
+        """
+        :param x: np.array matrix with feature data
+        :param y: np.array representation of target data
+        """
+        for e in range(1, epochs+1):
+            mse = None
+            for idx in range(0, x.shape[0], self.batch_size):
+                if idx+self.batch_size <= x.shape[0]:
+                    x_batch, y_batch = x[idx: idx+self.batch_size], y[idx: idx+self.batch_size]
+                else:
+                    x_batch, y_batch = x[idx:], y[idx:]
+                z_1, a_1, z_2, a_2 = self._calculate(x_batch)
+                out_error = y_batch - z_2
+                mse = 1/x_batch.shape[0] * np.sum(out_error ** 2)
+                self.b_2 = self.b_2 - self.alpha * np.sum(-out_error, axis=0)
+                self.w_2 = self.w_2 - self.alpha * np.dot(a_1.T, -out_error * 1) + l2 * self.w_2
                 h_delta = np.dot(out_error, self.w_2.T)
                 self.b_1 = self.b_1 - self.alpha * np.sum(-h_delta, axis=0)
                 self.w_1 = self.w_1 - self.alpha * np.dot(x_batch.T, -h_delta * self.hidden_layer_derivatives) + l2 * self.w_1
@@ -156,14 +224,22 @@ iris = pd.read_csv('data/iris.csv')
 # nn.fit(x_train, y_train)
 # predictions = nn.predict(x_test)
 # predictions = np.argmax(predictions, axis=1)
-# print('Accuracy:')
-# print(np.sum(predictions == y_test) / len(predictions))
+# print(f'\nAccuracy: {np.sum(predictions == y_test) / len(predictions): .3f}')
+
+
+# x = iris.iloc[:, 0:-2].to_numpy()
+# y = iris.iloc[:, -2].to_numpy().reshape([-1, 1])
+# x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
+# nn = CustomNeuralNetworkRegressor(x.shape[1], 8)
+# nn.fit(x_train, y_train)
+# prediction = nn.predict(x_test)
+# print(r2_score(y_test, prediction))
 
 
 x = iris.iloc[:, 0:-2].to_numpy()
 y = iris.iloc[:, -2].to_numpy().reshape([-1, 1])
 x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
-nn = CustomNeuralNetworkRegressor(x.shape[1], 8)
-nn.fit(x_train, y_train)
-prediction = nn.predict(x_test)
-print(r2_score(y_test, prediction))
+nn = CustomNeuralNetworkRegressorFull(x.shape[1], [8, 8, 16, 16])
+zz, aa, out = nn._calculate(x_train[0:6])
+
+# prediction = nn.predict(x_test)
