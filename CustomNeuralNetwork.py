@@ -17,7 +17,7 @@ def one_hot(x: np.array):
     return x_out
 
 
-class CustomNeuralNetwork:
+class CustomNeuralNetworkClassifier:
     """
     Custom (1 hidden layer) neural network classifier
     using sigmoid function as activation and mse as error with gradient descent
@@ -30,30 +30,29 @@ class CustomNeuralNetwork:
         self.w_2 = np.random.normal(0, 1, [hidden_size, output_size])
         self.batch_size = batch_size
         self.alpha = alpha
-        self.hidden_layer_derivatives = None  # hidden layers derivatives at point x
+        self.hidden_derivatives = None  # hidden layers derivatives at point x
+        self.output_derivatives = None
 
-    def _activation(self, x):
+    def _activation_sigmoid(self, x):
         return 1/(1+np.exp(-x))
+
+    def _activation_relu(self, x):
+        return x.clip(min=0)
 
     def _calculate(self, x):
         z_1 = self.b_1 + np.dot(x, self.w_1)
-        a_1 = self._activation(z_1)
-        self.hidden_layer_derivatives = a_1 * (1 - a_1)
+        a_1 = self._activation_relu(z_1)
+        self.hidden_derivatives = np.where(a_1 > 0, 1, 0)
         z_2 = self.b_2 + np.dot(a_1, self.w_2)
-        a_2 = self._activation(z_2)
+        a_2 = self._activation_sigmoid(z_2)
+        self.output_derivatives = a_2 * (1 - a_2)
         return a_1, a_2
 
     def predict(self, x):
         z_1 = self.b_1 + np.dot(x, self.w_1)
-        a_1 = self._activation(z_1)
+        a_1 = self._activation_relu(z_1)
         z_2 = self.b_2 + np.dot(a_1, self.w_2)
         return z_2
-
-    # def _derivative(self, x):
-    #     """
-    #     :return: derivative of activation function with respect of weights at x point
-    #     """
-    #     return self._activation(x) * (1 - self._activation(x))
 
     def fit(self, x, y, epochs=500, l2=0):
         """
@@ -74,12 +73,12 @@ class CustomNeuralNetwork:
                 a_1, preds = self._calculate(x_batch)
                 out_error = y_batch - preds
                 mse = 1/x_batch.shape[0] * np.sum(out_error ** 2)
-                out_delta = np.dot(a_1.T, -out_error)  # h x batch . batch x o = h x o
+                out_delta = np.dot(a_1.T, -out_error * self.output_derivatives)   # h x batch . batch x o = h x o
                 self.b_2 = self.b_2 - self.alpha * np.sum(-out_error, axis=0)
                 self.w_2 = self.w_2 - self.alpha * out_delta + l2 * self.w_2
-                h_delta = np.dot(out_error, self.w_2.T) * self.hidden_layer_derivatives  # batch x o . o x h = batch x h
+                h_delta = np.dot(out_error, self.w_2.T)  # batch x o . o x h = batch x h
                 self.b_1 = self.b_1 - self.alpha * np.sum(-h_delta, axis=0)
-                self.w_1 = self.w_1 - self.alpha * np.dot(x_batch.T, -h_delta) + l2 * self.w_1
+                self.w_1 = self.w_1 - self.alpha * np.dot(x_batch.T, -h_delta * self.hidden_derivatives) + l2 * self.w_1
                 h_previous_delta = np.dot(h_delta, self.w_1.T)  # batch x h_1 . h_1 x input = batch x input (times other derivative)
             print(f'Epoch: {e} | loss: {mse:.3f}')
         return self
@@ -100,12 +99,10 @@ class CustomNeuralNetworkRegressor:
         self.w_2 = np.zeros([hidden_size, 1]) + 1e-4
         self.batch_size = batch_size
         self.alpha = alpha
-        self.hidden_layer_derivatives = None  # hidden layers derivatives at point x
+        self.hidden_layer_derivatives = None
 
     def _activation(self, x):
         return x.clip(min=0)
-        # x[x<0] = 0
-        # return x
 
     def _calculate(self, x):
         z_1 = self.b_1 + np.dot(x, self.w_1)
@@ -139,24 +136,23 @@ class CustomNeuralNetworkRegressor:
                 out_error = y_batch - z_2
                 mse = 1/x_batch.shape[0] * np.sum(out_error ** 2)
                 out_delta = np.dot(a_1.T, -out_error)
-                # print(out_delta)
-                print(self.w_2)
                 self.b_2 = self.b_2 - self.alpha * np.sum(-out_error, axis=0)
-                self.w_2 = self.w_2 - self.alpha * out_delta
-                h_delta = np.dot(out_error, self.w_2.T) * self.hidden_layer_derivatives
+                self.w_2 = self.w_2 - self.alpha * out_delta + l2 * self.w_2
+                h_delta = np.dot(out_error, self.w_2.T)
                 self.b_1 = self.b_1 - self.alpha * np.sum(-h_delta, axis=0)
-                self.w_1 = self.w_1 - self.alpha * np.dot(x_batch.T, -h_delta)
+                self.w_1 = self.w_1 - self.alpha * np.dot(x_batch.T, -h_delta * self.hidden_layer_derivatives) + l2 * self.w_1
             print(f'Epoch: {e} | loss: {mse:.3f}')
         return self
 
 
 iris = pd.read_csv('data/iris.csv')
+
+
 # x = iris.iloc[:, 0:-1].to_numpy()
 # y = LabelEncoder().fit_transform(iris.iloc[:, -1].to_numpy())
 # yy = one_hot(y)
 # x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=7/10, stratify=yy)
-#
-# nn = CustomNeuralNetwork(x.shape[1], 8, 3)
+# nn = CustomNeuralNetworkClassifier(x.shape[1], 8, 3)
 # nn.fit(x_train, y_train)
 # predictions = nn.predict(x_test)
 # predictions = np.argmax(predictions, axis=1)
