@@ -148,22 +148,22 @@ class CustomNeuralNetworkRegressorFull:
     """
     def __init__(self, input_size: int, hidden_s, batch_size=32, alpha=1/1_000):
         self.input_size = input_size
-        self.hidden_s = hidden_s
+        self.hidden_s = hidden_s  # shape of the hidden layers
         self.batch_size = batch_size
         self.alpha = alpha
-        self.bs, self.ws = [], []
-        self.out_b, self.out_w = None, None
+        self.bs, self.ws = [], []  # weights of the hidden layers excluding outputs
+        self.out_b, self.out_w = None, None  # outputs weights
         self.derivatives = []
         self._build_layers()
 
     def _build_layers(self):
         previous_size = self.input_size
         for h in self.hidden_s:
-            self.bs.append(np.zeros(h) + 1e-4)
-            self.ws.append(np.zeros([previous_size, h]) + 1e-4)
+            self.bs.append(np.zeros(h) + 1e-2)
+            self.ws.append(np.zeros([previous_size, h]) + 1e-2)
             previous_size = h
-        self.out_b = np.zeros(1) + 1e-4
-        self.out_w = np.zeros([self.hidden_s[-1], 1]) + 1e-4
+        self.out_b = np.zeros(1) + 1e-2
+        self.out_w = np.zeros([self.hidden_s[-1], 1]) + 1e-2
 
     def _activation(self, x):
         return x.clip(min=0)
@@ -189,27 +189,36 @@ class CustomNeuralNetworkRegressorFull:
         z_out = self.out_b + np.dot(a, self.out_w)
         return z_out
 
-    def fit(self, x, y, epochs=500, l2=0):
+    def _learn(self, out_error, a_s, batch):
+        # output layer bias and weights of the output (last) layer
+        self.out_b = self.out_b - self.alpha * np.sum(-out_error, axis=0)
+        self.out_w = self.out_w - self.alpha * np.dot(a_s[-1].T, -out_error * 1)
+        delta = np.dot(out_error, self.out_w.T)
+        for i in range(len(a_s) - 1):  # need to skip the first layer to multiply it with feature data
+            self.bs[-(i+1)] = self.bs[-(i+1)] - self.alpha * np.sum(-delta, axis=0)
+            # weights are moved by alpha * dot(previous activation output transposed, - delta * activation derivatives)
+            self.ws[-(i+1)] = self.ws[-(i+1)] - self.alpha * np.dot(a_s[-(i+2)].T, -delta * self.derivatives[-(i+1)])
+            delta = np.dot(delta, self.ws[-(i+1)].T)
+        # first layer weights depends on batch feature data
+        self.bs[0] = self.bs[0] - self.alpha * np.sum(-delta, axis=0)
+        self.ws[0] = self.ws[0] - self.alpha * np.dot(batch.T, -delta * self.derivatives[0])
+
+    def fit(self, x, y, epochs=500):
         """
-        :param x: np.array matrix with feature data
-        :param y: np.array representation of target data
+        :param x: np.array 2d matrix with feature data
+        :param y: np.array 1d representation of target data
         """
         for e in range(1, epochs+1):
-            mse = None
             for idx in range(0, x.shape[0], self.batch_size):
                 if idx+self.batch_size <= x.shape[0]:
                     x_batch, y_batch = x[idx: idx+self.batch_size], y[idx: idx+self.batch_size]
                 else:
                     x_batch, y_batch = x[idx:], y[idx:]
-                z_1, a_1, z_2, a_2 = self._calculate(x_batch)
-                out_error = y_batch - z_2
+                z_s, a_s, z_out = self._calculate(x_batch)
+                out_error = y_batch - z_out
                 mse = 1/x_batch.shape[0] * np.sum(out_error ** 2)
-                self.b_2 = self.b_2 - self.alpha * np.sum(-out_error, axis=0)
-                self.w_2 = self.w_2 - self.alpha * np.dot(a_1.T, -out_error * 1) + l2 * self.w_2
-                h_delta = np.dot(out_error, self.w_2.T)
-                self.b_1 = self.b_1 - self.alpha * np.sum(-h_delta, axis=0)
-                self.w_1 = self.w_1 - self.alpha * np.dot(x_batch.T, -h_delta * self.hidden_layer_derivatives) + l2 * self.w_1
-            print(f'Epoch: {e} | loss: {mse:.3f}')
+                self._learn(out_error, a_s, x_batch)
+                print(f'Epoch: {e} | loss: {mse:.3f}')
         return self
 
 
@@ -239,7 +248,10 @@ iris = pd.read_csv('data/iris.csv')
 x = iris.iloc[:, 0:-2].to_numpy()
 y = iris.iloc[:, -2].to_numpy().reshape([-1, 1])
 x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
-nn = CustomNeuralNetworkRegressorFull(x.shape[1], [8, 8, 16, 16])
-zz, aa, out = nn._calculate(x_train[0:6])
+nn = CustomNeuralNetworkRegressorFull(x.shape[1], [8])
+# zz, aa, out = nn._calculate(x_train[0:6])
+nn.fit(x_train, y_train, epochs=500)
+# prediction = nn.predict(x_test)
+# print(r2_score(y_test, prediction))
 
 # prediction = nn.predict(x_test)
