@@ -204,7 +204,7 @@ class CustomNeuralNetworkRegressorFull:
         self.bs[0] = self.bs[0] - self.alpha * np.sum(-delta, axis=0)
         self.ws[0] = self.ws[0] - self.alpha * np.dot(batch.T, -delta * self.derivatives[0])
 
-    def fit(self, x, y, epochs=500):
+    def fit(self, x, y, epochs=500, verbose=True):
         """
         :param x: np.array 2d matrix with feature data
         :param y: np.array 1d representation of target data
@@ -220,7 +220,8 @@ class CustomNeuralNetworkRegressorFull:
                 out_error = y_batch - z_out
                 mse += 1/x_batch.shape[0] * np.sum(out_error ** 2)
                 self._learn(out_error, a_s, x_batch)
-            print(f'Epoch: {e} | loss: {mse:.3f}')
+            if verbose:
+                print(f'Epoch: {e} | loss: {mse:.3f}')
         return self
 
 
@@ -252,14 +253,25 @@ class CustomNeuralNetworkClassifierFull:
     def _build_layers(self):
         previous_size = self.input_size
         for h in self.hidden_s:
-            self.bs.append(np.zeros(h) + 1e-2)
+            self.bs.append(np.zeros(h))
             self.ws.append(np.zeros([previous_size, h]) + 1e-2)
             # self.bs.append(np.random.binomial(1, 1/3, h) * 1e-4)
             # self.ws.append(np.random.binomial(1, 1/3, [previous_size, h]) * 1e-4)
             previous_size = h
         self.out_b = np.zeros(self.output_size) + 1e-2
-        # self.out_w = np.random.normal(0, 1, [self.hidden_s[-1], self.output_size])
-        self.out_w = np.zeros([self.hidden_s[-1], self.output_size]) + 1e-2
+        self.out_w = np.random.normal(0, 1, [self.hidden_s[-1], self.output_size])
+        # self.out_w = np.zeros([self.hidden_s[-1], self.output_size]) + 1e-2
+
+    def _build_layers_2(self):  # Xavier/Glorot instead of relu in hidden layers activation
+        previous_size = self.input_size
+        for h in self.hidden_s:
+            limit = np.sqrt(6 / (previous_size + h))
+            self.bs.append(np.zeros(h) + 1e-2)
+            self.ws.append(np.random.uniform(-limit, +limit, [previous_size, h]))
+            previous_size = h
+        self.out_b = np.zeros(self.output_size) + 1e-2
+        self.out_w = np.random.normal(0, 1, [self.hidden_s[-1], self.output_size])
+        # self.out_w = np.zeros([self.hidden_s[-1], self.output_size]) + 1e-2
 
     def _activation_sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
@@ -304,21 +316,7 @@ class CustomNeuralNetworkClassifierFull:
         self.bs[0] = self.bs[0] - self.alpha * np.sum(-delta, axis=0)
         self.ws[0] = self.ws[0] - self.alpha * np.dot(batch.T, -delta * self.derivatives[0])
 
-    def _learn_2(self, out_error, z_s, batch):
-        # output layer bias and weights of the output (last) layer
-        self.out_b = self.out_b - self.alpha * np.sum(-out_error, axis=0)
-        self.out_w = self.out_w - self.alpha * np.dot(z_s[-1].T, -out_error * self.derivatives[-1])
-        delta = np.dot(out_error, self.out_w.T)
-        for i in range(len(z_s) - 1):  # need to skip the first layer to multiply it with feature data
-            self.bs[-(i+1)] = self.bs[-(i+1)] - self.alpha * np.sum(-delta, axis=0)
-            # weights are moved by alpha * dot(previous activation output transposed, - delta * activation derivatives)
-            self.ws[-(i+1)] = self.ws[-(i+1)] - self.alpha * np.dot(z_s[-(i+2)].T, -delta)
-            delta = np.dot(delta, self.ws[-(i+1)].T)
-        # first layer weights depends on batch feature data
-        self.bs[0] = self.bs[0] - self.alpha * np.sum(-delta, axis=0)
-        self.ws[0] = self.ws[0] - self.alpha * np.dot(batch.T, -delta)
-
-    def fit(self, x, y, epochs=500):
+    def fit(self, x, y, epochs=500, verbose=True):
         """
         :param x: np.array 2d matrix with feature data
         :param y: np.array 1d representation of target data
@@ -338,9 +336,9 @@ class CustomNeuralNetworkClassifierFull:
                 z_s, a_s, z_out, a_out = self._calculate(x_batch)
                 out_error = y_batch - a_out
                 mse += 1/x_batch.shape[0] * np.sum(out_error ** 2)
-                # self._learn_2(out_error, z_s, x_batch)
                 self._learn(out_error, a_s, x_batch)
-            print(f'Epoch: {e} | loss: {mse:.3f}')
+            if verbose:
+                print(f'Epoch: {e} | loss: {mse:.3f}')
         return self
 
 
@@ -367,21 +365,42 @@ iris = pd.read_csv('data/iris.csv')
 # print(r2_score(y_test, prediction))
 
 
-# x = iris.iloc[:, 0:-2].to_numpy()
-# y = iris.iloc[:, -2].to_numpy().reshape([-1, 1])
-# x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
-# nn = CustomNeuralNetworkRegressorFull(x.shape[1], [8, 16, 32, 32])
-# nn.fit(x_train, y_train, epochs=500)
-# prediction = nn.predict(x_test)
-# print(r2_score(y_test, prediction))
-
-
-x = iris.iloc[:, 0:-1].to_numpy()
-y = iris.iloc[:, -1].to_numpy()
-y = LabelEncoder().fit_transform(y)
+x = iris.iloc[:, 0:-2].to_numpy()
+y = iris.iloc[:, -2].to_numpy().reshape([-1, 1])
 x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
-nn = CustomNeuralNetworkClassifierFull(x.shape[1], [8, 16, 32], 3)
-nn.fit(x_train, y_train, epochs=500)
-predictions = nn.predict(x_test)
-predictions = np.argmax(predictions, axis=1)
-print(f'\nAccuracy: {np.sum(predictions == y_test) / len(predictions): .3f}')
+scores = []
+for i in range(23):
+    nn = CustomNeuralNetworkRegressorFull(x.shape[1], [8, 16, 8])
+    nn.fit(x_train, y_train, epochs=500, verbose=False)
+    prediction = nn.predict(x_test)
+    try:
+        score = r2_score(y_test, prediction)
+        print(f'Iteration {i+1} | score: {score:.3f}')
+        scores.append(score)
+    except ValueError:
+        print('nan values in predictions output at iteration %d' % (i+1))
+        break
+scores = np.array(scores)
+print(f'Regressor:\nMean score: {scores.mean()} | Variance: {scores.var()}')
+
+
+# x = iris.iloc[:, 0:-1].to_numpy()
+# y = iris.iloc[:, -1].to_numpy()
+# y = LabelEncoder().fit_transform(y)
+# x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
+# scores = []
+# for i in range(23):
+#     nn = CustomNeuralNetworkClassifierFull(x.shape[1], [8, 16, 8], 3)
+#     nn.fit(x_train, y_train, epochs=500, verbose=False)
+#     predictions = nn.predict(x_test)
+#     predictions = np.argmax(predictions, axis=1)
+#     score = np.sum(predictions == y_test) / len(predictions)
+#     print('Iteration %d | score: %.3f' % ((i+1), score))
+#     scores.append(score)
+# scores = np.array(scores)
+# print(f'Classifier:\nMean score: {scores.mean()} | Variance: {scores.var()}')
+
+# nn.fit(x_train, y_train, epochs=500)
+# predictions = nn.predict(x_test)
+# predictions = np.argmax(predictions, axis=1)
+# print(f'\nAccuracy: {np.sum(predictions == y_test) / len(predictions): .3f}')
