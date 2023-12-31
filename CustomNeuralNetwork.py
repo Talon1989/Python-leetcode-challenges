@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import r2_score
 
@@ -155,6 +156,7 @@ class CustomNeuralNetworkRegressorFull:
         self.bs, self.ws = [], []  # weights of the hidden layers excluding outputs
         self.out_b, self.out_w = None, None  # outputs weights
         self.derivatives = []
+        self.derivative_names = []
         self._build_layers()
 
     def _build_layers(self):
@@ -162,21 +164,27 @@ class CustomNeuralNetworkRegressorFull:
         for h in self.hidden_s:
             self.bs.append(np.zeros(h) + 1e-2)
             self.ws.append(np.zeros([previous_size, h]) + 1e-2)
+            # self.bs.append(np.random.normal(0, 1/100, h))
+            # self.ws.append(np.random.normal(0, 1/100, [previous_size, h]))
             previous_size = h
         self.out_b = np.zeros(1) + 1e-2
         self.out_w = np.zeros([self.hidden_s[-1], 1]) + 1e-2
+        # self.out_b = np.random.normal(0, 1/100, 1)
+        # self.out_w = np.random.normal(0, 1/100, [self.hidden_s[-1], 1])
 
     def _activation(self, x):
         return x.clip(min=0)
 
     def _calculate(self, x):
         self.derivatives.clear()
+        self.derivative_names.clear()
         a = x
         z_s, a_s = [], []
         for i in range(len(self.hidden_s)):
             z = self.bs[i] + np.dot(a, self.ws[i])
             a = self._activation(z)
             self.derivatives.append(np.where(a > 0, 1, 0))
+            self.derivative_names.append('relu%d' % i)
             z_s.append(z)
             a_s.append(a)
         z_out = self.out_b + np.dot(a, self.out_w)  # no need for output derivatives since it's linear output
@@ -365,40 +373,51 @@ iris = pd.read_csv('data/iris.csv')
 # print(r2_score(y_test, prediction))
 
 
-x = iris.iloc[:, 0:-2].to_numpy()
-y = iris.iloc[:, -2].to_numpy().reshape([-1, 1])
+# x = iris.iloc[:, 0:-2].to_numpy()
+# y = iris.iloc[:, -2].to_numpy().reshape([-1, 1])
+# x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
+
+# data = pd.read_csv('data/Student_Marks.csv')
+# x = data.iloc[:, 0:-1].to_numpy()
+# y = data.iloc[:, -1].to_numpy().reshape([-1, 1])
+# x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
+
+# nn = CustomNeuralNetworkRegressorFull(x.shape[1], [8])
+# nn.fit(x_train, y_train, epochs=500, verbose=True)
+# preds = nn.predict(x_test)
+# print(r2_score(y_test, preds))
+
+# scores = []
+# for i in range(23):
+#     nn = CustomNeuralNetworkRegressorFull(x.shape[1], [8, 16, 8])
+#     nn.fit(x_train, y_train, epochs=500, verbose=False)
+#     prediction = nn.predict(x_test)
+#     try:
+#         score = r2_score(y_test, prediction)
+#         print(f'Iteration {i+1} | score: {score:.3f}')
+#         scores.append(score)
+#     except ValueError:
+#         print('nan values in predictions output at iteration %d' % (i+1))
+#         break
+# scores = np.array(scores)
+# print(f'Regressor:\nMean score: {scores.mean()} | Variance: {scores.var()}')
+
+
+x = iris.iloc[:, 0:-1].to_numpy()
+y = iris.iloc[:, -1].to_numpy()
+y = LabelEncoder().fit_transform(y)
 x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
 scores = []
 for i in range(23):
-    nn = CustomNeuralNetworkRegressorFull(x.shape[1], [8, 16, 8])
+    nn = CustomNeuralNetworkClassifierFull(x.shape[1], [8, 16, 8], 3)
     nn.fit(x_train, y_train, epochs=500, verbose=False)
-    prediction = nn.predict(x_test)
-    try:
-        score = r2_score(y_test, prediction)
-        print(f'Iteration {i+1} | score: {score:.3f}')
-        scores.append(score)
-    except ValueError:
-        print('nan values in predictions output at iteration %d' % (i+1))
-        break
+    predictions = nn.predict(x_test)
+    predictions = np.argmax(predictions, axis=1)
+    score = np.sum(predictions == y_test) / len(predictions)
+    print('Iteration %d | score: %.3f' % ((i+1), score))
+    scores.append(score)
 scores = np.array(scores)
-print(f'Regressor:\nMean score: {scores.mean()} | Variance: {scores.var()}')
-
-
-# x = iris.iloc[:, 0:-1].to_numpy()
-# y = iris.iloc[:, -1].to_numpy()
-# y = LabelEncoder().fit_transform(y)
-# x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=8/10)
-# scores = []
-# for i in range(23):
-#     nn = CustomNeuralNetworkClassifierFull(x.shape[1], [8, 16, 8], 3)
-#     nn.fit(x_train, y_train, epochs=500, verbose=False)
-#     predictions = nn.predict(x_test)
-#     predictions = np.argmax(predictions, axis=1)
-#     score = np.sum(predictions == y_test) / len(predictions)
-#     print('Iteration %d | score: %.3f' % ((i+1), score))
-#     scores.append(score)
-# scores = np.array(scores)
-# print(f'Classifier:\nMean score: {scores.mean()} | Variance: {scores.var()}')
+print(f'Classifier:\nMean score: {scores.mean()} | Variance: {scores.var()}')
 
 # nn.fit(x_train, y_train, epochs=500)
 # predictions = nn.predict(x_test)
