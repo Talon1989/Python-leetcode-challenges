@@ -2,6 +2,8 @@
 # Given two sorted arrays nums1 and nums2 of size m and n respectively, return the median of the two sorted arrays.
 # The overall run time complexity should be O(log (m+n)).
 
+# https://leetcode.com/problems/median-of-two-sorted-arrays/
+
 
 class Solution(object):
     def findMedianSortedArrays(self, nums1, nums2):
@@ -47,8 +49,31 @@ class Solution(object):
 # def merge_sorted_arrays(arr_1, arr_2):
 
 
-nums1, nums2 = [1,2], [3,4]
-# nums1, nums2 = [1, 3], [2]
+# nums1, nums2 = [1,2], [3,4]
+nums1, nums2 = [1, 3], [2]
+
+
+# merged_arr = []
+# idx_1, idx_2 = 0, 0
+# while idx_1 < len(nums1) and idx_2 < len(nums2):
+#     if nums1[idx_1] <= nums2[idx_2]:
+#         merged_arr.append(nums1[idx_1])
+#         idx_1 += 1
+#     elif nums2[idx_2] < nums1[idx_1]:
+#         merged_arr.append(nums2[idx_2])
+#         idx_2 += 1
+# if idx_1 < len(nums1):
+#     merged_arr += nums1[idx_1:]
+# elif idx_2 < len(nums2):
+#     merged_arr += nums2[idx_2:]
+# pos = len(merged_arr) / 2
+# if pos % 1 == 0:
+#     pre = int(pos - 0.5)
+#     post = int(pos + 0.5)
+#     median = (merged_arr[pre] + merged_arr[post]) / 2
+# else:
+#     median = merged_arr[int(pos - 0.5)]
+# print(median)
 
 
 merged_arr = []
@@ -64,11 +89,12 @@ if idx_1 < len(nums1):
     merged_arr += nums1[idx_1:]
 elif idx_2 < len(nums2):
     merged_arr += nums2[idx_2:]
-pos = len(merged_arr) / 2
+print(merged_arr)
+pos = len(merged_arr) / 2.
 if pos % 1 == 0:
     pre = int(pos - 0.5)
     post = int(pos + 0.5)
-    median = (merged_arr[pre] + merged_arr[post]) / 2
+    median = (merged_arr[pre] + merged_arr[post]) / 2.
 else:
     median = merged_arr[int(pos - 0.5)]
 print(median)
