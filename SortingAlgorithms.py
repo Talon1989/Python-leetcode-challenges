@@ -72,7 +72,6 @@ def merge_sort(arr):  # not in-place
     middle = len(arr) // 2
     left = merge_sort(arr[:middle])
     right = merge_sort(arr[middle:])
-    print()
     return merge(left, right)
 
 
