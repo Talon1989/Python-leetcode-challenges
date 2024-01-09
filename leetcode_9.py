@@ -24,7 +24,7 @@ class Solution(object):
                 if summation == 0:
                     results.append([nums[i], nums[left], nums[right]])
                     left += 1
-                    right -= 1  # possible issue with these 2
+                    right -= 1
                     try:
                         while nums[left] == nums[left - 1]:
                             left += 1
