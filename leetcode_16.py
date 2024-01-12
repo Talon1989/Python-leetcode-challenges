@@ -13,7 +13,104 @@ class Solution:
         """
         Do not return anything, modify board in-place instead.
         """
-        pass
+        unit_values = []
+        for i in range(len(board)):
+            for j in range(len(board[i])):
+                unit_values.append(board[i][j])
+        MAX_ITER = 500
+        numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
+        for _ in range(MAX_ITER):
+
+            missing_dict = {}
+            for idx in range(len(unit_values)):
+                if unit_values[idx] == '.':
+                    row = int(idx / 9)
+                    col = idx % 9
+                    box = int(row / 3) * 3 + int(col / 3)
+                    values = set(self.get_row(row, unit_values)).union(set(self.get_col(col, unit_values))).union(
+                        set(self.get_box(box, unit_values)))
+                    values.remove('.')
+                    missing_dict[idx] = numbers.difference(values)
+            if len(missing_dict) == 0:
+                boardy = []
+                chunk = 9
+                for idx in range(0, len(unit_values), chunk):
+                    boardy.append(unit_values[idx: idx + chunk])
+                for idx in range(len(board)):
+                    board[idx] = boardy[idx]
+                break
+            n_missing_values = unit_values.count('.')
+            for idx, missings in missing_dict.items():
+                if len(missings) == 1:
+                    v = missings.pop()
+                    unit_values[idx] = v
+            if unit_values.count('.') == n_missing_values:
+
+                min_key = min(missing_dict, key=lambda k: len(missing_dict[k]))
+                min_set = missing_dict[min_key]
+                done = False
+
+                for v in min_set:
+
+                    unit_values_copy = unit_values[:]
+                    unit_values_copy[min_key] = v
+
+                    for _ in range(MAX_ITER):
+
+                        missing_dict = {}
+
+                        for idx in range(len(unit_values_copy)):
+                            if unit_values_copy[idx] == '.':
+                                row = int(idx / 9)
+                                col = idx % 9
+                                box = int(row / 3) * 3 + int(col / 3)
+                                values = set(get_row(row, unit_values_copy)).union(
+                                    set(get_col(col, unit_values_copy))).union(set(get_box(box, unit_values_copy)))
+                                values.remove('.')
+                                missing_dict[idx] = numbers.difference(values)
+
+                        if len(missing_dict) == 0:
+                            done = True
+                            boardy = []
+                            chunk = 9
+                            for idx in range(0, len(unit_values_copy), chunk):
+                                boardy.append(unit_values_copy[idx: idx + chunk])
+                            for idx in range(len(board)):
+                                board[idx] = boardy[idx]
+                            break
+
+                        n_missing_values = unit_values_copy.count('.')
+                        for idx, missings in missing_dict.items():
+                            if len(missings) == 1:
+                                v = missings.pop()
+                                unit_values_copy[idx] = v
+                        if unit_values_copy.count('.') == n_missing_values:
+                            break
+                    if done:
+                        break
+
+    def get_row(self, n: int, b):
+        assert 0 <= n <= 9
+        return b[9 * n: 9 * (n + 1)]
+
+    def get_col(self, n: int, b):
+        assert 0 <= n <= 9
+        return b[n::9]
+
+    def get_box(self, n: int, b):
+        assert 0 <= n <= 8
+        return (
+                b[3 * 9 * int(n / 3) + (n % 3) * 3: 3 * 9 * int(n / 3) + (n % 3) * 3 + 3] +
+                b[3 * 9 * int(n / 3) + 9 + (n % 3) * 3: 3 * 9 * int(n / 3) + 9 + (n % 3) * 3 + 3] +
+                b[3 * 9 * int(n / 3) + 18 + (n % 3) * 3: 3 * 9 * int(n / 3) + 18 + (n % 3) * 3 + 3]
+        )
+
+    def create_board_from_list(self, b):
+        boardy = []
+        chunk = 9
+        for idx in range(0, len(b), chunk):
+            boardy.append(b[idx: idx + chunk])
+        board = boardy
 
 
 # IDEA:
@@ -54,13 +151,16 @@ box_8 = [n for arr in [r[6:9] for r in board[6:9]] for n in arr]
 # print([i for sub_out in arr for sub_in in sub_out for i in sub_in])
 
 
-unit_values = [[] for _ in range(9**2)]
+# unit_values = [[] for _ in range(9**2)]
+unit_values = [_ for _ in range(9**2)]
 counter = 0
 for i in range(len(board)):
     for j in range(len(board[i])):
-        unit_values[counter] = [board[i][j]]
+        # unit_values[counter] = [board[i][j]]
+        unit_values[counter] = board[i][j]
         counter += 1
-print(f"{unit_values.count(['.'])} missing values.")
+# print(f"{unit_values.count(['.'])} missing values.")
+print(f"{unit_values.count('.')} missing values.")
 
 
 # print row 2  (starts from 0)
@@ -87,27 +187,184 @@ print(
 )
 
 
-def get_row(n: int):
+# def get_row(n: int):
+#     assert 0 <= n <= 9
+#     return unit_values[9*n: 9*(n+1)]
+#
+#
+# def get_col(n: int):
+#     assert 0 <= n <= 9
+#     return unit_values[n::9]
+#
+#
+# def get_box(n: int):
+#     assert 0 <= n <= 8
+#     return (
+#             unit_values[3*9*int(n/3) + (n % 3)*3: 3*9*int(n/3) + (n % 3)*3 + 3] +
+#             unit_values[3*9*int(n/3) + 9 + (n % 3)*3: 3*9*int(n/3) + 9 + (n % 3)*3 + 3] +
+#             unit_values[3*9*int(n/3) + 18 + (n % 3)*3: 3*9*int(n/3) + 18 + (n % 3)*3 + 3]
+#             )
+
+
+def get_row(n: int, b):
     assert 0 <= n <= 9
-    return unit_values[9*n: 9*(n+1)]
+    return b[9*n: 9*(n+1)]
 
 
-def get_col(n: int):
+def get_col(n: int, b):
     assert 0 <= n <= 9
-    return unit_values[n::9]
+    return b[n::9]
 
 
-def get_box(n: int):
+def get_box(n: int, b):
     assert 0 <= n <= 8
     return (
-            unit_values[3*9*int(n/3) + (n % 3)*3: 3*9*int(n/3) + (n % 3)*3 + 3] +
-            unit_values[3*9*int(n/3) + 9 + (n % 3)*3: 3*9*int(n/3) + 9 + (n % 3)*3 + 3] +
-            unit_values[3*9*int(n/3) + 18 + (n % 3)*3: 3*9*int(n/3) + 18 + (n % 3)*3 + 3]
+            b[3*9*int(n/3) + (n % 3)*3: 3*9*int(n/3) + (n % 3)*3 + 3] +
+            b[3*9*int(n/3) + 9 + (n % 3)*3: 3*9*int(n/3) + 9 + (n % 3)*3 + 3] +
+            b[3*9*int(n/3) + 18 + (n % 3)*3: 3*9*int(n/3) + 18 + (n % 3)*3 + 3]
             )
 
 
 # given a number of unit in the board [0, 81], find a way to determine its corresponding row, col and box
 # for row it's div 9: int(n/9)
 # for column it's the module: n%9
-# for box is int(row_80/3)*3 + int(col_80/3)
+# for box is int(row/3)*3 + int(col/3)
+
+
+# numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
+# position = 3
+# u_row = int(position/9)
+# u_col = position % 9
+# u_box = int(u_row/3) * 3 + int(u_col/3)
+
+
+# values = set(get_row(u_row)).union(set(get_col(u_col))).union(set(get_box(u_box)))
+# values.remove('.')
+# possible_values = numbers.difference(values)
+
+
+MAX_ITER = 500
+numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
+
+
+for _ in range(3):
+
+    missing_dict = {}
+
+    for idx in range(len(unit_values)):
+        if unit_values[idx] == '.':
+            row = int(idx / 9)
+            col = idx % 9
+            box = int(row / 3) * 3 + int(col / 3)
+            values = set(get_row(row, unit_values)).union(set(get_col(col, unit_values))).union(set(get_box(box, unit_values)))
+            values.remove('.')
+            missing_dict[idx] = numbers.difference(values)
+
+    if len(missing_dict) == 0:
+        break
+
+    n_missing_values = unit_values.count('.')
+    for idx, missings in missing_dict.items():
+        if len(missings) == 1:
+            v = missings.pop()
+            unit_values[idx] = v
+    if unit_values.count('.') == n_missing_values:
+        print('Huston we have a problem.')
+
+
+#  TESTING CASE OF n_missing_values = unit_values.count('.')
+
+
+print(f"{unit_values.count('.')} missing values.")
+indices_to_delete = []
+for idx, v in missing_dict.items():
+    if len(v) == 0:
+        indices_to_delete.append(idx)
+    print(f'{idx} : {v}')
+for i in indices_to_delete:
+    del missing_dict[i]
+
+
+min_key = min(missing_dict, key=lambda k: len(missing_dict[k]))
+min_set = missing_dict[min_key]
+
+for v in min_set:
+
+    print(v)
+
+    unit_values_copy = unit_values[:]
+    unit_values_copy[min_key] = v
+    done = False
+
+    for _ in range(MAX_ITER):
+
+        missing_dict = {}
+
+        for idx in range(len(unit_values_copy)):
+            if unit_values_copy[idx] == '.':
+                row = int(idx / 9)
+                col = idx % 9
+                box = int(row / 3) * 3 + int(col / 3)
+                values = set(get_row(row, unit_values_copy)).union(set(get_col(col, unit_values_copy))).union(set(get_box(box, unit_values_copy)))
+                values.remove('.')
+                missing_dict[idx] = numbers.difference(values)
+
+        if len(missing_dict) == 0:
+            print('done')
+            done = True
+            break
+
+        n_missing_values = unit_values_copy.count('.')
+        for idx, missings in missing_dict.items():
+            if len(missings) == 1:
+                v = missings.pop()
+                unit_values_copy[idx] = v
+        if unit_values_copy.count('.') == n_missing_values:
+            print('Huston we have a problem.')
+            break
+
+    if done:
+        break
+
+
+# print(unit_values_copy.count('.'))
+
+
+def create_board_from_list(b):
+    boardy = []
+    chunk = 9
+    for idx in range(0, len(b), chunk):
+        boardy.append(b[idx: idx+chunk])
+    board = boardy
+
+
+def go_through_recursive(b):
+    for _ in range(MAX_ITER):
+        missing_dict = {}
+        for idx in range(len(b)):
+            if b[idx] == '.':
+                row = int(idx / 9)
+                col = idx % 9
+                box = int(row / 3) * 3 + int(col / 3)
+                values = set(get_row(row, b)).union(set(get_col(col, b))).union(set(get_box(box, b)))
+                values.remove('.')
+                missing_dict[idx] = numbers.difference(values)
+
+        if len(missing_dict) == 0:
+            return create_board_from_list(b)
+
+        n_missing_values = b.count('.')
+        for idx, missings in missing_dict.items():
+            if len(missings) == 1:
+                v = missings.pop()
+                b[idx] = v
+        if b.count('.') == n_missing_values:
+            min_key = min(missing_dict, key=lambda k: len(missing_dict[k]))
+            min_set = missing_dict[min_key]
+            if len(min_set) > 2:
+                return
+            else:
+                for v in min_set:
+                    unit_values_copy[min_key] = v
+                    go_through_recursive(b[:])
 
