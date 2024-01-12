@@ -367,4 +367,3 @@ def go_through_recursive(b):
                 for v in min_set:
                     unit_values_copy[min_key] = v
                     go_through_recursive(b[:])
-
