@@ -123,7 +123,7 @@ class Solution:
         for i in range(len(board)):
             for j in range(len(board[i])):
                 unit_values.append(board[i][j])
-        self.go_through_recursive(board, unit_values)
+        self.go_through_recursive(0, board, unit_values)
 
     def get_row(self, n: int, b):
         assert 0 <= n <= 9
@@ -136,19 +136,20 @@ class Solution:
     def get_box(self, n: int, b):
         assert 0 <= n <= 8
         return set(
-                b[3 * 9 * int(n / 3) + (n % 3) * 3: 3 * 9 * int(n / 3) + (n % 3) * 3 + 3] +
-                b[3 * 9 * int(n / 3) + 9 + (n % 3) * 3: 3 * 9 * int(n / 3) + 9 + (n % 3) * 3 + 3] +
-                b[3 * 9 * int(n / 3) + 18 + (n % 3) * 3: 3 * 9 * int(n / 3) + 18 + (n % 3) * 3 + 3]
+            b[3 * 9 * int(n / 3) + (n % 3) * 3: 3 * 9 * int(n / 3) + (n % 3) * 3 + 3] +
+            b[3 * 9 * int(n / 3) + 9 + (n % 3) * 3: 3 * 9 * int(n / 3) + 9 + (n % 3) * 3 + 3] +
+            b[3 * 9 * int(n / 3) + 18 + (n % 3) * 3: 3 * 9 * int(n / 3) + 18 + (n % 3) * 3 + 3]
         )
 
-    def go_through_recursive(self, board, b, d=False):
+    def go_through_recursive(self, it, board, b, d=False):
         """
         :param board: sudoku board as matrix where each row is a line
         :param b: sudoku board as a single long list
         """
+        print(it)
         numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
-        for _ in range(500):
+        for i in range(500):
 
             if d:
                 return True
@@ -161,31 +162,43 @@ class Solution:
                     box = int(row / 3) * 3 + int(col / 3)
                     values = self.get_row(row, b).union(self.get_col(col, b)).union(self.get_box(box, b))
                     values.remove('.')
-                    missing_dict[idx] = numbers.difference(values)
-                    if len(missing_dict[idx]) == 0:  # if an empty space has no possible value we failed
-                        del b
+                    missing_ones = numbers.difference(values)
+                    if len(missing_ones) == 0:  # impossible to continue
+                        print(f'impossible from dict making at rec {it}')
+                        # del b
                         return False
+                    missing_dict[idx] = missing_ones
 
-            # store assured values
             old_count = b.count('.')
-            for idx, missings in missing_dict.items():
+            for idx, missings in missing_dict.items():  # store assured values
+
+                # if len(missings) != 1:
+                #     row = int(idx / 9)
+                #     col = idx % 9
+                #     box = int(row / 3) * 3 + int(col / 3)
+                #     values = self.get_row(row, b).union(self.get_col(col, b)).union(self.get_box(box, b))
+                #     values.remove('.')  # some of these values are [1, 9]
+                #     missing_ones = numbers.difference(values)
+                #     if len(missing_ones) == 0:
+                #         print(f'impossible from outside : {len(missings)}')
+                #         return False
+
                 if len(missings) == 1:
 
-                    row = int(idx / 9)
-                    col = idx % 9
-                    box = int(row / 3) * 3 + int(col / 3)
-                    values = self.get_row(row, b).union(self.get_col(col, b)).union(self.get_box(box, b))
-                    values.remove('.')  # some of these values are [1, 9]
-                    missing_one = numbers.difference(values)
-                    if len(missing_one) == 0:
-                        print(values)
-                    # print(values)
-                    v = missings.pop()
-                    print(v)
-                    # if v != numbers.difference(values).pop():
+                    # row = int(idx / 9)
+                    # col = idx % 9
+                    # box = int(row / 3) * 3 + int(col / 3)
+                    # values = self.get_row(row, b).union(self.get_col(col, b)).union(self.get_box(box, b))
+                    # values.remove('.')  # some of these values are [1, 9]
+                    # missing_ones = numbers.difference(values)
+                    # v = missings.pop()
+                    # if len(missing_ones) == 0:  # impossible to continue
+                    #     # print(f'Value to store: {v} | Values already present: {values}')
+                    #     print(f'impossible from update at rec {it}')
+                    #     # del b
                     #     return False
 
-                    # v = missings.pop()
+                    v = missings.pop()
                     b[idx] = v
 
             if b.count('.') == 0:  # check if complete
@@ -199,7 +212,7 @@ class Solution:
                             return True
                         bb = b[:]
                         bb[idx] = number
-                        d = self.go_through_recursive(board, bb)
+                        d = self.go_through_recursive(it + 1, board, bb)
 
     def create_board_from_list(self, board, b):
         boardy = []
@@ -209,6 +222,60 @@ class Solution:
         for idx in range(len(board)):
             board[idx] = boardy[idx]
         print('done')
+
+    def solveSudoku_2(self, board: List[List[str]]) -> None:
+        """
+        Do not return anything, modify board in-place instead.
+        """
+        unit_values = []
+        for i in range(len(board)):
+            for j in range(len(board[i])):
+                unit_values.append(board[i][j])
+        self.go_through_recursive_2(board, unit_values)
+
+    def go_through_recursive_2(self, board, b, d=False):
+        """
+        :param board: sudoku board as matrix where each row is a line
+        :param b: sudoku board as a single long list
+        """
+        numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
+
+        for i in range(500):
+
+            if d:
+                return True
+
+            missing_dict = {}  # populate missing_dict
+            for idx in range(len(b)):
+                if b[idx] == '.':
+                    row = int(idx / 9)
+                    col = idx % 9
+                    box = int(row / 3) * 3 + int(col / 3)
+                    values = self.get_row(row, b).union(self.get_col(col, b)).union(self.get_box(box, b))
+                    values.remove('.')
+                    missing_ones = numbers.difference(values)
+                    if len(missing_ones) == 0:  # impossible to continue
+                        return False
+                    missing_dict[idx] = missing_ones
+
+            old_count = b.count('.')
+            for idx, missings in missing_dict.items():  # store assured values
+                if len(missings) == 1:
+                    v = missings.pop()
+                    b[idx] = v
+
+            if b.count('.') == 0:  # check if complete
+                self.create_board_from_list(board, b)
+                return True
+
+            if b.count('.') == old_count:  # if no progress has been made
+                for idx, s in missing_dict.items():  # iterate through the dictionary
+                    for number in s:  # create a new board and store indecisive value then recur
+                        if d:
+                            return True
+                        bb = b[:]
+                        bb[idx] = number
+                        d = self.go_through_recursive_2(board, bb)
 
 
 # IDEA:
@@ -248,7 +315,6 @@ def create_board_from_list(b):
 #          [".", ".", ".", ".", ".", ".", ".", ".", "6"],
 #          [".", ".", ".", "2", "7", "5", "9", ".", "."]]
 
-
 board = [[".", ".", ".", "2", ".", ".", ".", "6", "3"],
          ["3", ".", ".", ".", ".", "5", "4", ".", "1"],
          [".", ".", "1", ".", ".", "3", "9", "8", "."],
@@ -258,6 +324,16 @@ board = [[".", ".", ".", "2", ".", ".", ".", "6", "3"],
          [".", "2", "6", "3", ".", ".", "5", ".", "."],
          ["5", ".", "3", "7", ".", ".", ".", ".", "8"],
          ["4", "7", ".", ".", ".", "1", ".", ".", "."]]
+
+# board = [[".", ".", ".", ".", ".", ".", ".", "6", "3"],
+#          ["3", ".", ".", ".", ".", ".", "4", ".", "1"],
+#          [".", ".", "1", ".", ".", "3", "9", "8", "."],
+#          [".", ".", ".", ".", ".", ".", ".", "9", "."],
+#          [".", ".", ".", ".", ".", "8", ".", ".", "."],
+#          [".", "3", ".", ".", ".", ".", ".", ".", "."],
+#          [".", ".", ".", "3", ".", ".", "5", ".", "."],
+#          ["5", ".", "3", "7", ".", ".", ".", ".", "8"],
+#          ["4", "7", ".", ".", ".", "1", ".", ".", "."]]
 
 # check row by checking individual list: board[0] = 0th row
 # check column by using a list compression: [row[0] for row in board] = 0th column
@@ -273,6 +349,7 @@ box_5 = [n for arr in [r[6:9] for r in board[3:6]] for n in arr]
 box_6 = [n for arr in [r[0:3] for r in board[6:9]] for n in arr]
 box_7 = [n for arr in [r[3:6] for r in board[6:9]] for n in arr]
 box_8 = [n for arr in [r[6:9] for r in board[6:9]] for n in arr]
+
 
 # arr = [[[1, 2, 3]]]
 # print([i for sub_out in arr for sub_in in sub_out for i in sub_in])
@@ -491,4 +568,5 @@ def go_through_recursive(b):
             #         go_through_recursive(bb)
 
 
-Solution().solveSudoku(board)
+# Solution().solveSudoku(board)
+Solution().solveSudoku_2(board)
