@@ -33,9 +33,7 @@ class Sudoku:
         numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
         while True:
 
-            if d:
-                return True
-
+            old_count = b.count('.')
             missing_dict = {}  # populate missing_dict
             for idx in range(len(b)):
                 if b[idx] == '.':
@@ -46,14 +44,12 @@ class Sudoku:
                     missing_ones = numbers.difference(values)  # possible values to input in the slot
                     if len(missing_ones) == 0:  # impossible to continue
                         return False
-                    missing_dict[idx] = missing_ones
+                    elif len(missing_ones) == 1:
+                        b[idx] = missing_ones.pop()
+                    else:
+                        missing_dict[idx] = missing_ones
 
-            old_count = b.count('.')
-            # now we iterate through the dictionary of possible values per index,
-            # if one index has a set with a single number it means that that's the only possible number so we store it
-            for idx, missings in missing_dict.items():  # store assured values
-                if len(missings) == 1:
-                    b[idx] = missings.pop()
+            print(missing_dict)
 
             if b.count('.') == 0:  # check if complete
                 self.create_board_from_list(board, b)
@@ -62,11 +58,10 @@ class Sudoku:
             if b.count('.') == old_count:  # if no progress has been made
                 for idx, s in missing_dict.items():  # iterate through the dictionary
                     for number in s:  # create a new board and store indecisive value then recur
-                        if d:
-                            return True
                         bb = b[:]
                         bb[idx] = number
-                        d = self.go_through_recursive(board, bb)
+                        if self.go_through_recursive(board, bb):
+                            return True
 
     def create_board_from_list(self, board, b):
         temp_board = []
@@ -76,21 +71,6 @@ class Sudoku:
         for idx in range(len(board)):
             board[idx] = temp_board[idx]
         print('done')
-
-    def check_conflicts(self, b):
-        values = b[:]
-        for idx, number in enumerate(values):
-            if number == '.':
-                continue
-
-            row = int(idx / 9)
-            col = idx % 9
-            box = int(row / 3) * 3 + int(col / 3)
-
-            if number in self.get_row(row, values) or number in self.get_col(col, values) or number in self.get_box(
-                    box, values):
-                return False
-        return True
 
 
 # board = [["5", "3", ".", ".", "7", ".", ".", ".", "."],
@@ -133,4 +113,82 @@ board = [[".", ".", "9", "7", "4", "8", ".", ".", "."],
 #          ["5", ".", "3", "7", ".", ".", ".", ".", "8"],
 #          ["4", "7", ".", ".", ".", "1", ".", ".", "."]]
 
+
 Sudoku().solve_it(board)
+
+
+boards = [
+        [["5", "3", ".", ".", "7", ".", ".", ".", "."],
+         ["6", ".", ".", "1", "9", "5", ".", ".", "."],
+         [".", "9", "8", ".", ".", ".", ".", "6", "."],
+         ["8", ".", ".", ".", "6", ".", ".", ".", "3"],
+         ["4", ".", ".", "8", ".", "3", ".", ".", "1"],
+         ["7", ".", ".", ".", "2", ".", ".", ".", "6"],
+         [".", "6", ".", ".", ".", ".", "2", "8", "."],
+         [".", ".", ".", "4", "1", "9", ".", ".", "5"],
+         [".", ".", ".", ".", "8", ".", ".", "7", "9"]],
+
+        [[".", ".", "9", "7", "4", "8", ".", ".", "."],
+         ["7", ".", ".", ".", ".", ".", ".", ".", "."],
+         [".", "2", ".", "1", ".", "9", ".", ".", "."],
+         [".", ".", "7", ".", ".", ".", "2", "4", "."],
+         [".", "6", "4", ".", "1", ".", "5", "9", "."],
+         [".", "9", "8", ".", ".", ".", "3", ".", "."],
+         [".", ".", ".", "8", ".", "3", ".", "2", "."],
+         [".", ".", ".", ".", ".", ".", ".", ".", "6"],
+         [".", ".", ".", "2", "7", "5", "9", ".", "."]],
+
+        [[".", ".", ".", "2", ".", ".", ".", "6", "3"],
+         ["3", ".", ".", ".", ".", "5", "4", ".", "1"],
+         [".", ".", "1", ".", ".", "3", "9", "8", "."],
+         [".", ".", ".", ".", ".", ".", ".", "9", "."],
+         [".", ".", ".", "5", "3", "8", ".", ".", "."],
+         [".", "3", ".", ".", ".", ".", ".", ".", "."],
+         [".", "2", "6", "3", ".", ".", "5", ".", "."],
+         ["5", ".", "3", "7", ".", ".", ".", ".", "8"],
+         ["4", "7", ".", ".", ".", "1", ".", ".", "."]],
+
+        [[".", ".", ".", ".", ".", ".", ".", "6", "3"],
+         ["3", ".", ".", ".", ".", ".", "4", ".", "1"],
+         [".", ".", "1", ".", ".", "3", "9", "8", "."],
+         [".", ".", ".", ".", ".", ".", ".", "9", "."],
+         [".", ".", ".", ".", ".", "8", ".", ".", "."],
+         [".", "3", ".", ".", ".", ".", ".", ".", "."],
+         [".", ".", ".", "3", ".", ".", "5", ".", "."],
+         ["5", ".", "3", "7", ".", ".", ".", ".", "8"],
+         ["4", "7", ".", ".", ".", "1", ".", ".", "."]]
+]
+
+
+# for i in range(100):
+#     boa = boards[i % 4]
+#     Sudoku().solve_it(boa)
+
+print('end')
+
+
+# def solve(board):
+#     for i in range(9):
+#         for j in range(9):
+#             if board[i][j] == '.':
+#                 for num in '123456789':
+#                     if valid(board, i, j, num):
+#                         board[i][j] = num
+#                         if solve(board):
+#                             return True
+#                         else:
+#                             board[i][j] = '.'  # undo the current cell for backtracking
+#                 return False  # trigger backtracking
+#     return True
+#
+#
+# def valid(board, row, col, num):
+#     # Check the number in the row, column and box.
+#     for i in range(9):
+#         if board[i][col] == num:
+#             return False
+#         if board[row][i] == num:
+#             return False
+#         if board[3 * (row // 3) + i // 3][3 * (col // 3) + i % 3] == num:
+#             return False
+#     return True
