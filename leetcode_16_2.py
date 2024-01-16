@@ -1,6 +1,9 @@
 from typing import List
 
 
+# MORE EFFICIENT ALGORITHM FOR SUDOKU SOLVER
+
+
 class Sudoku:
     def solve_it(self, board: List[List[str]]) -> None:
         """
@@ -25,43 +28,77 @@ class Sudoku:
         assert 0 <= n <= 8
         return set(b[i] for i in range(81) if (i // 27) == (n // 3) and i % 9 // 3 == n % 3)
 
-    def go_through_recursive(self, board, b, d=False):
-        """
-        :param board: sudoku board as matrix where each row is a line
-        :param b: sudoku board as a single long list
-        """
+    # def go_through_recursive(self, board, b, d=False):
+    #     """
+    #     :param board: sudoku board as matrix where each row is a line
+    #     :param b: sudoku board as a single long list
+    #     """
+    #     numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
+    #     while True:
+    #
+    #         old_count = b.count('.')
+    #         missing_dict = {}  # populate missing_dict
+    #         for idx in range(len(b)):
+    #             if b[idx] == '.':
+    #                 row, col, box = idx // 9, idx % 9, (idx // 27) * 3 + (idx % 9) // 3
+    #                 # union of all the present values in current row, col and box
+    #                 values = self.get_row(row, b).union(self.get_col(col, b)).union(self.get_box(box, b))
+    #                 values.remove('.')
+    #                 missing_ones = numbers.difference(values)  # possible values to input in the slot
+    #                 if len(missing_ones) == 0:  # impossible to continue
+    #                     return False
+    #                 elif len(missing_ones) == 1:
+    #                     b[idx] = missing_ones.pop()
+    #                 else:
+    #                     missing_dict[idx] = missing_ones
+    #
+    #         print(missing_dict)
+    #
+    #         if b.count('.') == 0:  # check if complete
+    #             self.create_board_from_list(board, b)
+    #             return True
+    #
+    #         if b.count('.') == old_count:  # if no progress has been made
+    #             for idx, s in missing_dict.items():  # iterate through the dictionary
+    #                 for number in s:  # create a new board and store indecisive value then recur
+    #                     bb = b[:]
+    #                     bb[idx] = number
+    #                     if self.go_through_recursive(board, bb):
+    #                         return True
+
+    def go_through_recursive(self, board, b):
         numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
         while True:
-
-            old_count = b.count('.')
-            missing_dict = {}  # populate missing_dict
+            missing_dict = {}
             for idx in range(len(b)):
                 if b[idx] == '.':
                     row, col, box = idx // 9, idx % 9, (idx // 27) * 3 + (idx % 9) // 3
-                    # union of all the present values in current row, col and box
                     values = self.get_row(row, b).union(self.get_col(col, b)).union(self.get_box(box, b))
                     values.remove('.')
-                    missing_ones = numbers.difference(values)  # possible values to input in the slot
-                    if len(missing_ones) == 0:  # impossible to continue
+                    missing_ones = numbers.difference(values)
+                    if len(missing_ones) == 0:
                         return False
-                    elif len(missing_ones) == 1:
-                        b[idx] = missing_ones.pop()
-                    else:
-                        missing_dict[idx] = missing_ones
+                    missing_dict[idx] = missing_ones
 
-            print(missing_dict)
+            old_count = b.count('.')
 
-            if b.count('.') == 0:  # check if complete
+            for idx, missings in missing_dict.items():
+                if len(missings) == 1:
+                    b[idx] = missings.pop()
+                    break  # missing_dict is no longer up to date
+
+            if b.count('.') == 0:
                 self.create_board_from_list(board, b)
                 return True
 
-            if b.count('.') == old_count:  # if no progress has been made
-                for idx, s in missing_dict.items():  # iterate through the dictionary
-                    for number in s:  # create a new board and store indecisive value then recur
-                        bb = b[:]
-                        bb[idx] = number
-                        if self.go_through_recursive(board, bb):
-                            return True
+            if b.count('.') == old_count:
+                idx, s = next(iter(missing_dict.items()))
+                for number in s:
+                    bb = b[:]
+                    bb[idx] = number
+                    if self.go_through_recursive(board, bb):
+                        return True
+                return False  # index has no possible value, so backtrack
 
     def create_board_from_list(self, board, b):
         temp_board = []
@@ -160,9 +197,9 @@ boards = [
 ]
 
 
-# for i in range(100):
-#     boa = boards[i % 4]
-#     Sudoku().solve_it(boa)
+for i in range(100):
+    boa = boards[i % 4]
+    Sudoku().solve_it(boa)
 
 print('end')
 
