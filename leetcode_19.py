@@ -67,7 +67,7 @@ s, p = "aaabbbaabaaaaababaabaaabbabbbbbbbbaabababbabbbaaaaba", "a*******b"
 # IDEA: the 'big deal' is the '*' operator, given all others we could just iterate through the string
 # and check if one fails returning False.
 # let's then use a bruteforce approach with a recursive method that checks 'everything' once it encounters '*'
-# THIS IS COMPUTATIONALLY TOO EXPENSIVE (TIME WISE) PROBABLY NEED TO USE SOME RECURSION + MEMORISATION
+# THIS IS COMPUTATIONALLY TOO EXPENSIVE (TIME WISE) PROBABLY NEED TO USE SOME RECURSION + MEMOIZATION
 
 
 def func(s, p, last_star=False):
